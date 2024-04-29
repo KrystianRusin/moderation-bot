@@ -2,11 +2,11 @@ import { Entity, PrimaryColumn, Column } from "typeorm";
 
 @Entity("voice_activity")
 export class VoiceActivity {
-  @PrimaryColumn("bigint")
-  user_id!: number;
+  @PrimaryColumn("varchar")
+  user_id!: string;
 
-  @Column("bigint")
-  guild_id!: number;
+  @Column("varchar")
+  guild_id!: string;
 
   @Column("bigint", { nullable: true })
   current_channel_id?: number;

@@ -56,7 +56,7 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 client.on("voiceStateUpdate", async (oldState, newState) => {
-  handleVoiceActivity(oldState, newState);
+  handleVoiceActivity(oldState, newState, client);
 });
 
 client.on("ready", async () => {
