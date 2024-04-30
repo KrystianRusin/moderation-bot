@@ -4,7 +4,7 @@ import { initializeDatabase } from "./database";
 import { AppDataSource } from "./database";
 import { BannedWord } from "./entities/BannedWord";
 import { handleWarning } from "./commands/warnCommand";
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, PartialGuildMember } from "discord.js";
 import { GuildMember } from "discord.js";
 import Warn from "./commands/utility/warn";
 import { Users } from "./entities/Users";
@@ -50,6 +50,24 @@ client.on("guildMemberAdd", async (member: GuildMember) => {
   // Save the new user to the database
   await userRepository.save(user);
 });
+
+client.on(
+  "guildMemberRemove",
+  async (member: GuildMember | PartialGuildMember) => {
+    console.log("User left the server");
+    const userRepository = AppDataSource.getRepository(Users);
+
+    // Find the user in the database
+    const user = await userRepository.findOne({
+      where: { user_id: member.id },
+    });
+
+    // If the user is found, delete them from the database
+    if (user) {
+      await userRepository.remove(user);
+    }
+  }
+);
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
