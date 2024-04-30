@@ -2,8 +2,8 @@ import { DataSource } from "typeorm";
 import { BannedWord } from "./entities/BannedWord";
 import { Warning } from "./entities/Warning";
 import "dotenv/config";
-import { VoiceActivity } from "./entities/VoiceActivity";
 import { VoiceChatRole } from "./entities/VoiceRoles";
+import { Users } from "./entities/Users";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -12,7 +12,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [BannedWord, Warning, VoiceActivity, VoiceChatRole],
+  entities: [BannedWord, Warning, VoiceChatRole, Users],
   synchronize: true,
 });
 

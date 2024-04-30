@@ -1,7 +1,7 @@
 import { VoiceState } from "discord.js";
 import { AppDataSource } from "../database";
-import { VoiceActivity } from "../entities/VoiceActivity";
-import { handleRolePromotion } from "./utility/promote";
+import { VoiceChatRole } from "../entities/VoiceRoles";
+import { Users } from "../entities/Users";
 import BotClient from "../BotClient";
 
 export async function handleVoiceActivity(
@@ -10,59 +10,75 @@ export async function handleVoiceActivity(
   client: BotClient
 ) {
   console.log("Voice state update");
-  const voiceActivityRespository = AppDataSource.getRepository(VoiceActivity);
+  const userRespository = AppDataSource.getRepository(Users);
+  const roleRepository = AppDataSource.getRepository(VoiceChatRole);
 
+  // If the user joins a voice channel
   if (!oldState.channelId && newState.channelId && newState.member) {
-    let voiceActivity = await voiceActivityRespository.findOne({
+    let currentUser = await userRespository.findOne({
       where: { user_id: String(newState.member.id) },
     });
 
     console.log("newState", newState.member.id);
-    console.log("Voice activity", voiceActivity?.user_id);
 
-    if (!voiceActivity) {
-      voiceActivity = new VoiceActivity();
-      voiceActivity.user_id = String(newState.member.id);
-      voiceActivity.guild_id = String(newState.guild.id);
-      voiceActivity.total_voice_time = 0;
+    if (!currentUser) return;
+
+    // If the user has never joined a voice channel before set time spent in vc to 0
+    if (!currentUser.time_spent_in_voice) {
+      currentUser.time_spent_in_voice = 0;
     }
 
-    voiceActivity.current_session_start = new Date();
+    // Initialize new voice session and save it to the database
+    currentUser.current_voice_session_start = new Date();
+    await userRespository.save(currentUser);
 
-    await voiceActivityRespository.save(voiceActivity);
+    // If the user leaves a voice channel
   } else if (oldState.channelId && !newState.channelId) {
     if (!oldState.member) return;
-    let voiceActivity = await voiceActivityRespository.findOne({
+    let currentUser = await userRespository.findOne({
       where: { user_id: String(oldState.member.id) },
     });
 
-    if (voiceActivity) {
+    if (!currentUser) return;
+
+    if (currentUser.current_voice_session_start) {
       const now = new Date();
       const timeInChannel = Math.round(
-        (now.getTime() - voiceActivity.current_session_start!.getTime()) / 1000
+        (now.getTime() - currentUser.current_voice_session_start!.getTime()) /
+          1000
       );
       console.log("Time in channel", timeInChannel);
 
       // Increment total_voice_time in the database
-      await voiceActivityRespository.increment(
-        { user_id: voiceActivity.user_id },
-        "total_voice_time",
+      await userRespository.increment(
+        { user_id: currentUser.user_id },
+        "time_spent_in_voice",
         timeInChannel
       );
 
       // Reload voiceActivity from the database
-      voiceActivity = await voiceActivityRespository.findOne({
+      currentUser = await userRespository.findOne({
         where: { user_id: String(oldState.member.id) },
       });
 
-      if (!voiceActivity) return;
-      voiceActivity.current_session_start = undefined;
-      if (voiceActivity.total_voice_time < 60) {
-        voiceActivity.current_role_id = 1;
-      }
+      if (!currentUser) return;
+      currentUser.current_voice_session_start = undefined;
+      // Retrieve the roles from the voice_chat_roles table
+      const roles = await roleRepository.find();
 
-      await voiceActivityRespository.save(voiceActivity);
-      handleRolePromotion(voiceActivity.user_id, client);
+      // Find the role that the user's time_spent_in_voice satisfies
+      const role = roles.find(
+        (role) =>
+          currentUser &&
+          currentUser.time_spent_in_voice >= role.time_requirement
+      );
+
+      if (role) {
+        // Update the user's voice_chat_role_id with the role_id of the found role
+        currentUser.voice_chat_role_id = role;
+
+        await userRespository.save(currentUser);
+      }
     }
   }
 }

@@ -1,19 +1,30 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import { Users } from "./Users";
 
-@Entity("warning")
+@Entity("warnings")
 export class Warning {
   @PrimaryGeneratedColumn("increment")
   warning_id!: number;
 
-  @Column({ type: "varchar", length: 50, nullable: false })
-  username!: string;
+  @Column("varchar", { length: 255 })
+  user_id!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false })
+  @Column("varchar", { length: 255 })
+  moderator_id!: string;
+
+  @Column("text", { nullable: false })
   reason!: string;
 
-  @Column({ type: "varchar", length: 50, nullable: false })
-  moderator!: string;
-
-  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  @Column("timestamp", { default: () => "CURRENT_TIMESTAMP" })
   warned_on!: Date;
+
+  @ManyToOne(() => Users)
+  @JoinColumn({ name: "user_id" })
+  user!: Users;
 }

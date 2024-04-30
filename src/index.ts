@@ -6,6 +6,7 @@ import { BannedWord } from "./entities/BannedWord";
 import { handleWarning } from "./commands/warnCommand";
 import { CommandInteraction } from "discord.js";
 import Warn from "./commands/utility/warn";
+import { Users } from "./entities/Users";
 import { handleVoiceActivity } from "./commands/voiceActivity";
 
 const client = new BotClient({
@@ -46,7 +47,10 @@ client.on("messageCreate", async (message) => {
   );
   if (containsBannedWord) {
     message.delete();
-    message.channel.send(`${message.author.toString()} That word is banned!`);
+    const warningMessage = await message.channel.send(
+      `${message.author.toString()} That word is banned!`
+    );
+    setTimeout(() => warningMessage.delete(), 5000);
   }
 });
 
