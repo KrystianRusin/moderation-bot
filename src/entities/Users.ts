@@ -15,7 +15,7 @@ export class Users {
   voice_chat_role_id!: VoiceChatRole;
 
   @Column({ type: "timestamp" })
-  date_joined!: Date; // TypeORM handles conversion
+  date_joined!: Date;
 
   @Column({ type: "int", default: 0 })
   warning_count!: number;

@@ -5,6 +5,7 @@ import { AppDataSource } from "./database";
 import { BannedWord } from "./entities/BannedWord";
 import { handleWarning } from "./commands/warnCommand";
 import { CommandInteraction } from "discord.js";
+import { GuildMember } from "discord.js";
 import Warn from "./commands/utility/warn";
 import { Users } from "./entities/Users";
 import { handleVoiceActivity } from "./commands/voiceActivity";
@@ -35,6 +36,20 @@ const getWords = async () => {
   console.log(bannedWords);
   return bannedWords;
 };
+
+client.on("guildMemberAdd", async (member: GuildMember) => {
+  const userRepository = AppDataSource.getRepository(Users);
+  // Create a new Users entity
+  const user = new Users();
+  user.user_id = member.id;
+  user.username = member.user.username;
+  user.date_joined = new Date();
+  user.warning_count = 0;
+  user.time_spent_in_voice = 0;
+
+  // Save the new user to the database
+  await userRepository.save(user);
+});
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
